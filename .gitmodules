@@ -1,18 +1,24 @@
 [submodule "vendor/github.com/beorn7/perks"]
 	path = vendor/github.com/beorn7/perks
 	url = https://github.com/beorn7/perks
+[submodule "vendor/github.com/bmizerany/assert"]
+	path = vendor/github.com/bmizerany/assert
+	url = https://github.com/bmizerany/assert
 [submodule "vendor/github.com/bmizerany/pat"]
 	path = vendor/github.com/bmizerany/pat
 	url = https://github.com/bmizerany/pat
+[submodule "vendor/github.com/davecgh/go-spew"]
+	path = vendor/github.com/davecgh/go-spew
+	url = https://github.com/davecgh/go-spew
 [submodule "vendor/github.com/golang/protobuf"]
 	path = vendor/github.com/golang/protobuf
 	url = https://github.com/golang/protobuf
-[submodule "vendor/github.com/hashicorp/go-cleanhttp"]
-	path = vendor/github.com/hashicorp/go-cleanhttp
-	url = https://github.com/hashicorp/go-cleanhttp
-[submodule "vendor/github.com/hashicorp/serf"]
-	path = vendor/github.com/hashicorp/serf
-	url = https://github.com/hashicorp/serf
+[submodule "vendor/github.com/kr/pretty"]
+	path = vendor/github.com/kr/pretty
+	url = https://github.com/kr/pretty
+[submodule "vendor/github.com/kr/text"]
+	path = vendor/github.com/kr/text
+	url = https://github.com/kr/text
 [submodule "vendor/github.com/matttproud/golang_protobuf_extensions"]
 	path = vendor/github.com/matttproud/golang_protobuf_extensions
 	url = https://github.com/matttproud/golang_protobuf_extensions
@@ -31,3 +37,6 @@
 [submodule "vendor/github.com/prometheus/procfs"]
 	path = vendor/github.com/prometheus/procfs
 	url = https://github.com/prometheus/procfs
+[submodule "vendor/github.com/stretchr/testify"]
+	path = vendor/github.com/stretchr/testify
+	url = https://github.com/stretchr/testify
