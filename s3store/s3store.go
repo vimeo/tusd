@@ -90,6 +90,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/tus/tusd"
 	"github.com/tus/tusd/uid"
@@ -103,6 +104,11 @@ import (
 // This regular expression matches every character which is not defined in the
 // ASCII tables which range from 00 to 7F, inclusive.
 var nonASCIIRegexp = regexp.MustCompile(`([^\x00-\x7F])`)
+
+type partFile struct {
+	File *os.File
+	Size int64
+}
 
 // See the tusd.DataStore interface for documentation about the different
 // methods.
@@ -209,9 +215,6 @@ func (store S3Store) WriteChunk(id string, offset int64, src io.Reader) (int64, 
 		return 0, err
 	}
 
-	size := info.Size
-	bytesUploaded := int64(0)
-
 	// Get number of parts to generate next number
 	listPtr, err := store.Service.ListParts(&s3.ListPartsInput{
 		Bucket:   aws.String(store.Bucket),
@@ -226,47 +229,100 @@ func (store S3Store) WriteChunk(id string, offset int64, src io.Reader) (int64, 
 	numParts := len(list.Parts)
 	nextPartNum := int64(numParts + 1)
 
-	for {
-		// Create a temporary file to store the part in it
-		file, err := ioutil.TempFile("", "tusd-s3-tmp-")
-		if err != nil {
-			return bytesUploaded, err
-		}
-		defer os.Remove(file.Name())
-		defer file.Close()
+	errs := make([]error, 0)
+	bytesToRead := info.Size - offset
+	bytesUploaded := int64(0)
+	partsToUpload := make(chan partFile, 10)
+	continueRead := true
 
-		limitedReader := io.LimitReader(src, store.MaxPartSize)
-		n, err := io.Copy(file, limitedReader)
-		if err != nil && err != io.EOF {
-			return bytesUploaded, err
-		}
+	go func() {
+		defer close(partsToUpload)
 
-		if (size - offset) <= store.MinPartSize {
-			if (size - offset) != n {
-				return bytesUploaded, nil
+		for continueRead {
+			// Create a temporary file to store the part in it. This routine is not
+			// responsible for closing/removing this file. It will be outside of this
+			// loop.
+			file, err := ioutil.TempFile("", "tusd-s3-tmp-")
+			if err != nil {
+				errs = append(errs, err)
+				return
 			}
-		} else if n < store.MinPartSize {
-			return bytesUploaded, nil
+
+			// Read from the provided source and pipe it into the temp. file but
+			// limit it to the defined maximum.
+			limitedReader := io.LimitReader(src, store.MaxPartSize)
+			bytesRead, err := io.Copy(file, limitedReader)
+			fmt.Println(bytesRead, err)
+			if err != nil && err != io.EOF {
+				errs = append(errs, err)
+				return
+			}
+			if bytesRead == 0 {
+				return
+			}
+
+			if bytesToRead <= store.MinPartSize {
+				// If we have less bytes than MinPartSize to read, then we need to
+				// check whether we have just read enough bytes to complete the upload.
+				// If so, we can continue pushing this part to the storage backend.
+				// If not, we must stop uploading since no part must be smaller than
+				// MinPartSize (excpet for the last part).
+				if bytesToRead != bytesRead {
+					return
+				}
+			} else if bytesRead < store.MinPartSize {
+				// We have read less then MinPartSize but this part will not complete
+				// the upload. Therefore this part is not the last part in the upload
+				// and it must not be smaller than MinPartSize. In this case we must
+				// stop the upload.
+				return
+			}
+
+			// Seek to the beginning of the file
+			file.Seek(0, 0)
+
+			// Push the part file and its size to the other loop which takes care of
+			// the actual uploading.
+			fmt.Println("Push", bytesRead)
+			partsToUpload <- partFile{
+				File: file,
+				Size: bytesRead,
+			}
+
+			bytesToRead -= bytesRead
 		}
+	}()
 
-		// Seek to the beginning of the file
-		file.Seek(0, 0)
-
-		_, err = store.Service.UploadPart(&s3.UploadPartInput{
+	for part := range partsToUpload {
+		fmt.Println("Pop", part)
+		_ , err := store.Service.UploadPart(&s3.UploadPartInput{
 			Bucket:     aws.String(store.Bucket),
 			Key:        aws.String(uploadId),
 			UploadId:   aws.String(multipartId),
 			PartNumber: aws.Int64(nextPartNum),
-			Body:       file,
+			Body:       part.File,
 		})
+
+		part.File.Close()
+		os.Remove(part.File.Name())
+
 		if err != nil {
-			return bytesUploaded, err
+			errs = append(errs, err)
+			break
 		}
 
-		offset += bytesUploaded
-		bytesUploaded += n
+		bytesUploaded += part.Size
 		nextPartNum += 1
 	}
+
+	continueRead = false
+
+	for part := range partsToUpload {
+		part.File.Close()
+		os.Remove(part.File.Name())
+	}
+
+	return bytesUploaded, newMultiError(errs)
 }
 
 func (store S3Store) GetInfo(id string) (info tusd.FileInfo, err error) {
@@ -428,6 +484,8 @@ func (store S3Store) Terminate(id string) error {
 }
 
 func (store S3Store) FinishUpload(id string) error {
+	start := time.Now()
+
 	uploadId, multipartId := splitIds(id)
 
 	// Get uploaded parts
@@ -439,6 +497,8 @@ func (store S3Store) FinishUpload(id string) error {
 	if err != nil {
 		return err
 	}
+
+  fmt.Printf("\n\nFetching parts took %s\n", time.Since(start))
 
 	// Transform the []*s3.Part slice to a []*s3.CompletedPart slice for the next
 	// request.
@@ -452,6 +512,8 @@ func (store S3Store) FinishUpload(id string) error {
 		}
 	}
 
+		start = time.Now()
+
 	_, err = store.Service.CompleteMultipartUpload(&s3.CompleteMultipartUploadInput{
 		Bucket:   aws.String(store.Bucket),
 		Key:      aws.String(uploadId),
@@ -461,6 +523,7 @@ func (store S3Store) FinishUpload(id string) error {
 		},
 	})
 
+	  fmt.Printf("\n\nFetching parts took %s\n", time.Since(start))
 	return err
 }
 
