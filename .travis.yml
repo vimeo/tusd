@@ -27,10 +27,8 @@ install:
 script:
 - go test $PACKAGES
 before_deploy:
-- export GOROOT_BOOTSTRAP=$GOROOT
-- go get github.com/laher/goxc
-- goxc -t -bc="linux darwin windows"
-- goxc -d=./ -wd=./cmd/tusd -bc="linux darwin windows" -build-ldflags="-X github.com/tus/tusd/cmd/tusd/cli.VersionName=$TRAVIS_TAG -X github.com/tus/tusd/cmd/tusd/cli.GitCommit=$TRAVIS_COMMIT -X 'github.com/tus/tusd/cmd/tusd/cli.BuildDate=$(date --utc)'"
+- ./xcompile.sh
+- ls ./
 deploy:
   provider: releases
   api_key:
@@ -48,8 +46,8 @@ deploy:
   - snapshot/tusd_windows_amd64.zip
   skip_cleanup: true
   on:
-    tags: true
-    go: 1.5
+    #tags: true
+    go: 1.7
     repo: tus/tusd
 after_deploy:
 - make frey && frey setup --force-yes --projectDir .infra
