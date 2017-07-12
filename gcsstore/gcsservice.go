@@ -73,12 +73,13 @@ type GCSAPI interface {
 type GCSService struct {
 	Client            *storage.Client
 	Ctx               context.Context
+	GetObjectAttrs    func(GCSObjectParams) (*storage.ObjectAttrs, error)
 	ReadObject        func(GCSObjectParams) (GCSReader, error)
 	SetObjectMetadata func(GCSObjectParams, map[string]string) error
-	getObjectAttrs    func(GCSObjectParams) (*storage.ObjectAttrs, error)
 	DeleteObject      func(GCSObjectParams) error
 	WriteObject       func(params GCSObjectParams, r io.Reader) (int64, error)
 	ComposeFrom       func([]*storage.ObjectHandle, GCSObjectParams, string) (uint32, error)
+	FilterObjects     func(GCSFilterParams) ([]string, error)
 }
 
 // NewGCSService returns a GCSSerivce object given a GCloud service account file path.
@@ -92,7 +93,7 @@ func NewGCSService(filename string) (*GCSService, error) {
 	service := &GCSService{
 		Client: client,
 		Ctx:    ctx,
-		getObjectAttrs: func(params GCSObjectParams) (*storage.ObjectAttrs, error) {
+		GetObjectAttrs: func(params GCSObjectParams) (*storage.ObjectAttrs, error) {
 			// getObjectAttrs returns the associated attributes of a GCS object.
 			// https://godoc.org/cloud.google.com/go/storage#ObjectAttrs
 
@@ -155,6 +156,64 @@ func NewGCSService(filename string) (*GCSService, error) {
 
 			return dstAttrs.CRC32C, nil
 		},
+		FilterObjects: func(params GCSFilterParams) ([]string, error) {
+			// FilterObjects retuns a list of GCS object IDs that match the passed GCSFilterParams.
+			// It expects GCS objects to be of the format [uid]_[chunk_idx] where chunk_idx
+			// is zero based. The format [uid]_tmp_[recursion_lvl]_[chunk_idx] can also be used to
+			// specify objects that have been composed in a recursive fashion. These different formats
+			// are usedd to ensure that objects are composed in the correct order.
+
+			bkt := client.Bucket(params.Bucket)
+
+			q := storage.Query{
+				Prefix:   params.Prefix,
+				Versions: false,
+			}
+
+			it := bkt.Objects(ctx, &q)
+
+			names := make([]string, 0)
+			for {
+				objAttrs, err := it.Next()
+				if err == iterator.Done {
+					break
+				}
+				if err != nil {
+					return nil, err
+				}
+
+				split := strings.Split(objAttrs.Name, "_")
+
+				// If the object name splits on "_" in to four pieces we
+				// know the object name we are working with is in the format
+				// [uid]_tmp_[recursion_lvl]_[chunk_idx]. The only time we filter
+				// these temporary objects is on a delete operation so we can just
+				// append and continue without worrying about index order
+				if len(split) == 4 {
+					names = append(names, objAttrs.Name)
+					continue
+				}
+
+				if len(split) != 2 {
+					err := errors.New("Invalid filter format for object name")
+					return nil, err
+				}
+
+				idx, err := strconv.Atoi(split[1])
+				if err != nil {
+					return nil, err
+				}
+
+				if len(names) <= idx {
+					names = append(names, make([]string, idx-len(names)+1)...)
+				}
+
+				names[idx] = objAttrs.Name
+			}
+
+			return names, nil
+
+		},
 	}
 
 	return service, nil
@@ -162,7 +221,7 @@ func NewGCSService(filename string) (*GCSService, error) {
 
 // GetObjectSize returns the byte length of the specified GCS object.
 func (service *GCSService) GetObjectSize(params GCSObjectParams) (int64, error) {
-	attrs, err := service.getObjectAttrs(params)
+	attrs, err := service.GetObjectAttrs(params)
 	if err != nil {
 		return 0, err
 	}
@@ -206,7 +265,7 @@ func (service *GCSService) compose(bucket string, srcs []string, dst string) err
 	var crc uint32
 	for i := 0; i < len(srcs); i++ {
 		objSrcs[i] = service.Client.Bucket(bucket).Object(srcs[i])
-		srcAttrs, err := service.getObjectAttrs(GCSObjectParams{
+		srcAttrs, err := service.GetObjectAttrs(GCSObjectParams{
 			Bucket: bucket,
 			ID:     srcs[i],
 		})
@@ -219,9 +278,10 @@ func (service *GCSService) compose(bucket string, srcs []string, dst string) err
 		} else {
 			crc = crc32combine.CRC32Combine(crc32.Castagnoli, crc, srcAttrs.CRC32C, srcAttrs.Size)
 		}
+		fmt.Println(crc)
 	}
 
-	attrs, err := service.getObjectAttrs(GCSObjectParams{
+	attrs, err := service.GetObjectAttrs(GCSObjectParams{
 		Bucket: bucket,
 		ID:     srcs[0],
 	})
@@ -235,6 +295,7 @@ func (service *GCSService) compose(bucket string, srcs []string, dst string) err
 			return err
 		}
 
+		fmt.Println("Dest crc: ", dstCRC)
 		if dstCRC == crc {
 			return nil
 		}
@@ -313,61 +374,4 @@ func (service *GCSService) ComposeObjects(params GCSComposeParams) error {
 	}
 
 	return nil
-}
-
-// FilterObjects retuns a list of GCS object IDs that match the passed GCSFilterParams.
-// It expects GCS objects to be of the format [uid]_[chunk_idx] where chunk_idx
-// is zero based. The format [uid]_tmp_[recursion_lvl]_[chunk_idx] can also be used to
-// specify objects that have been composed in a recursive fashion. These different formats
-// are usedd to ensure that objects are composed in the correct order.
-func (service *GCSService) FilterObjects(params GCSFilterParams) ([]string, error) {
-	bkt := service.Client.Bucket(params.Bucket)
-
-	q := storage.Query{
-		Prefix:   params.Prefix,
-		Versions: false,
-	}
-
-	it := bkt.Objects(service.Ctx, &q)
-
-	names := make([]string, 0)
-	for {
-		objAttrs, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		split := strings.Split(objAttrs.Name, "_")
-
-		// If the object name splits on "_" in to four pieces we
-		// know the object name we are working with is in the format
-		// [uid]_tmp_[recursion_lvl]_[chunk_idx]. The only time we filter
-		// these temporary objects is on a delete operation so we can just
-		// append and continue without worrying about index order
-		if len(split) == 4 {
-			names = append(names, objAttrs.Name)
-			continue
-		}
-
-		if len(split) != 2 {
-			err := errors.New("Invalid filter format for object name")
-			return nil, err
-		}
-
-		idx, err := strconv.Atoi(split[1])
-		if err != nil {
-			return nil, err
-		}
-
-		if len(names) <= idx {
-			names = append(names, make([]string, idx-len(names)+1)...)
-		}
-
-		names[idx] = objAttrs.Name
-	}
-
-	return names, nil
 }
