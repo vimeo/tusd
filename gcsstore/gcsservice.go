@@ -70,6 +70,8 @@ type GCSAPI interface {
 
 // GCSService holds the cloud.google.com/go/storage client
 // as well as its associated context.
+// Closures are used as minimal wrappers aroudn the Google Cloud Storage API, since the Storage API cannot be mocked.
+// The usage of these closures allow them to be redefined in the testing package, allowing test to be run against this file.
 type GCSService struct {
 	Client            *storage.Client
 	Ctx               context.Context
@@ -93,10 +95,9 @@ func NewGCSService(filename string) (*GCSService, error) {
 	service := &GCSService{
 		Client: client,
 		Ctx:    ctx,
+		// GetObjectAttrs returns the associated attributes of a GCS object.
+		// https://godoc.org/cloud.google.com/go/storage#ObjectAttrs
 		GetObjectAttrs: func(params GCSObjectParams) (*storage.ObjectAttrs, error) {
-			// getObjectAttrs returns the associated attributes of a GCS object.
-			// https://godoc.org/cloud.google.com/go/storage#ObjectAttrs
-
 			obj := client.Bucket(params.Bucket).Object(params.ID)
 
 			attrs, err := obj.Attrs(ctx)
@@ -106,6 +107,7 @@ func NewGCSService(filename string) (*GCSService, error) {
 
 			return attrs, nil
 		},
+		// ReadObject reaads a GCSObjectParams, returning a GCSReader object if successful, and an error otherwise
 		ReadObject: func(params GCSObjectParams) (GCSReader, error) {
 			r, err := client.Bucket(params.Bucket).Object(params.ID).NewReader(ctx)
 			if err != nil {
@@ -114,6 +116,7 @@ func NewGCSService(filename string) (*GCSService, error) {
 
 			return r, nil
 		},
+		// SetObjectMetadata reads a GCSObjectParams and a map of metedata, returning a nil on sucess and an error otherwise
 		SetObjectMetadata: func(params GCSObjectParams, metadata map[string]string) error {
 			attrs := storage.ObjectAttrsToUpdate{
 				Metadata: metadata,
@@ -122,7 +125,6 @@ func NewGCSService(filename string) (*GCSService, error) {
 
 			return err
 		},
-
 		DeleteObject: func(params GCSObjectParams) error {
 			return client.Bucket(params.Bucket).Object(params.ID).Delete(ctx)
 		},
@@ -140,6 +142,7 @@ func NewGCSService(filename string) (*GCSService, error) {
 
 			return n, err
 		},
+		//ComposeFrom composes multiple object types together,
 		ComposeFrom: func(objSrcs []*storage.ObjectHandle, dstParams GCSObjectParams, contentType string) (uint32, error) {
 			dstObj := client.Bucket(dstParams.Bucket).Object(dstParams.ID)
 			c := dstObj.ComposerFrom(objSrcs...)
@@ -156,13 +159,12 @@ func NewGCSService(filename string) (*GCSService, error) {
 
 			return dstAttrs.CRC32C, nil
 		},
+		// FilterObjects retuns a list of GCS object IDs that match the passed GCSFilterParams.
+		// It expects GCS objects to be of the format [uid]_[chunk_idx] where chunk_idx
+		// is zero based. The format [uid]_tmp_[recursion_lvl]_[chunk_idx] can also be used to
+		// specify objects that have been composed in a recursive fashion. These different formats
+		// are usedd to ensure that objects are composed in the correct order.
 		FilterObjects: func(params GCSFilterParams) ([]string, error) {
-			// FilterObjects retuns a list of GCS object IDs that match the passed GCSFilterParams.
-			// It expects GCS objects to be of the format [uid]_[chunk_idx] where chunk_idx
-			// is zero based. The format [uid]_tmp_[recursion_lvl]_[chunk_idx] can also be used to
-			// specify objects that have been composed in a recursive fashion. These different formats
-			// are usedd to ensure that objects are composed in the correct order.
-
 			bkt := client.Bucket(params.Bucket)
 
 			q := storage.Query{
@@ -255,7 +257,6 @@ func (service *GCSService) DeleteObjectsWithFilter(params GCSFilterParams) error
 const COMPOSE_RETRIES = 3
 
 // Compose takes a bucket name, a list of initial source names, and a destination string to compose multiple GCS objects together
-//
 func (service *GCSService) compose(bucket string, srcs []string, dst string) error {
 	dstParams := GCSObjectParams{
 		Bucket: bucket,
@@ -278,7 +279,6 @@ func (service *GCSService) compose(bucket string, srcs []string, dst string) err
 		} else {
 			crc = crc32combine.CRC32Combine(crc32.Castagnoli, crc, srcAttrs.CRC32C, srcAttrs.Size)
 		}
-		fmt.Println(crc)
 	}
 
 	attrs, err := service.GetObjectAttrs(GCSObjectParams{
@@ -295,7 +295,6 @@ func (service *GCSService) compose(bucket string, srcs []string, dst string) err
 			return err
 		}
 
-		fmt.Println("Dest crc: ", dstCRC)
 		if dstCRC == crc {
 			return nil
 		}

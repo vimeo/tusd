@@ -69,7 +69,6 @@ func TestGCSCompose(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error: %v", err)
 	}
-	//service.compose("bucket", ["t1", "t2", "t3"], "destination")
 
 	composeParams := GCSComposeParams{
 		Bucket:      "test-bucket",
