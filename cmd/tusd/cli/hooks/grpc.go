@@ -5,8 +5,8 @@ import (
 	"time"
 
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/tus/tusd/pkg/handler"
-	pb "github.com/tus/tusd/pkg/proto/v1"
+	"github.com/vimeo/tusd/pkg/handler"
+	pb "github.com/vimeo/tusd/pkg/proto/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 )

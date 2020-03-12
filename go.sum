@@ -108,6 +108,8 @@ github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJy
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
 github.com/vimeo/go-util v1.2.0 h1:YHzwOnM+V2tc6r67K9fXpYqUiRwXp0TgFKuyj+A5bsg=
 github.com/vimeo/go-util v1.2.0/go.mod h1:s13SMDTSO7AjH1nbgp707mfN5JFIWUFDU5MDDuRRtKs=
+github.com/vimeo/tusd-util v1.2.0 h1:YHzwOnM+V2tc6r67K9fXpYqUiRwXp0TgFKuyj+A5bsg=
+github.com/vimeo/tusd-util v1.2.0/go.mod h1:s13SMDTSO7AjH1nbgp707mfN5JFIWUFDU5MDDuRRtKs=
 go.opencensus.io v0.21.0 h1:mU6zScU4U1YAFPHEHYk+3JC4SY7JxgkqS10ZOSyksNg=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=

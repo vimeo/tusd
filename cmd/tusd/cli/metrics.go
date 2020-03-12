@@ -3,8 +3,8 @@ package cli
 import (
 	"net/http"
 
-	"github.com/tus/tusd/pkg/handler"
-	"github.com/tus/tusd/pkg/prometheuscollector"
+	"github.com/vimeo/tusd/pkg/handler"
+	"github.com/vimeo/tusd/pkg/prometheuscollector"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

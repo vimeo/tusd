@@ -7,9 +7,9 @@
 #
 
 cat <<-EOH
-# This file is generated via https://github.com/tus/tusd/blob/master/generate-docker-library.sh
+# This file is generated via https://github.com/vimeo/tusd/blob/master/generate-docker-library.sh
 Maintainers: tus.io (@tus), Thomas A. Hirsch (@thirsch)
-GitRepo: https://github.com/tus/tusd.git
+GitRepo: https://github.com/vimeo/tusd.git
 EOH
 
 skipBeforeVersion="0.13.0"

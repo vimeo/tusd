@@ -4,7 +4,7 @@
 
 You can download ready-to-use packages including binaries for OS X, Linux and
 Windows in various formats of the
-[latest release](https://github.com/tus/tusd/releases/latest).
+[latest release](https://github.com/vimeo/tusd/releases/latest).
 
 ## Compile from source
 

@@ -22,7 +22,7 @@ nearly any other cloud provider could easily be added to tusd.
 **Protocol version:** 1.0.0
 
 This branch contains tusd v1. If you are looking for the previous major release, after which
-breaking changes have been introduced, please look at the [0.14.0 tag](https://github.com/tus/tusd/tree/0.14.0).
+breaking changes have been introduced, please look at the [0.14.0 tag](https://github.com/vimeo/tusd/tree/0.14.0).
 
 ## Documentation
 
@@ -35,7 +35,7 @@ breaking changes have been introduced, please look at the [0.14.0 tag](https://g
 
 ## Build status
 
-![Build Status](https://github.com/tus/tusd/workflows/Test/badge.svg)
+![Build Status](https://github.com/vimeo/tusd/workflows/Test/badge.svg)
 
 ## License
 

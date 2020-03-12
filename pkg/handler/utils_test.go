@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/tus/tusd/pkg/handler"
+	"github.com/vimeo/tusd/pkg/handler"
 )
 
 //go:generate mockgen -package handler_test -source utils_test.go -aux_files handler=datastore.go -destination=handler_mock_test.go

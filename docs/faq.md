@@ -2,7 +2,7 @@
 
 ### How can I access tusd using HTTPS?
 
-The tusd binary, once executed, listens on the provided port for only non-encrypted HTTP requests and *does not accept* HTTPS connections. This decision has been made to limit the functionality inside this repository which has to be developed, tested and maintained. If you want to send requests to tusd in a secure fashion - what we absolutely encourage, we recommend you to utilize a reverse proxy in front of tusd which accepts incoming HTTPS connections and forwards them to tusd using plain HTTP. More information about this topic, including sample configurations for Nginx and Apache, can be found in [issue #86](https://github.com/tus/tusd/issues/86#issuecomment-269569077) and in the [Apache example configuration](/examples/apache2.conf).
+The tusd binary, once executed, listens on the provided port for only non-encrypted HTTP requests and *does not accept* HTTPS connections. This decision has been made to limit the functionality inside this repository which has to be developed, tested and maintained. If you want to send requests to tusd in a secure fashion - what we absolutely encourage, we recommend you to utilize a reverse proxy in front of tusd which accepts incoming HTTPS connections and forwards them to tusd using plain HTTP. More information about this topic, including sample configurations for Nginx and Apache, can be found in [issue #86](https://github.com/vimeo/tusd/issues/86#issuecomment-269569077) and in the [Apache example configuration](/examples/apache2.conf).
 
 ### Can I run tusd behind a reverse proxy?
 
@@ -22,11 +22,11 @@ Yes, this is made possible by the [hook system](/docs/hooks.md) inside the tusd 
 
 ### Can I run tusd inside a VM/Vagrant/VirtualBox?
 
-Yes, you can absolutely do so without any modifications. However, there is one known problem: If you are using tusd inside VirtualBox (the default provider for Vagrant) and are storing the files inside a shared/synced folder, you might get TemporaryErrors (Lockfile created, but doesn't exist) when trying to upload. This happens because shared folders do not support hard links which are necessary for tusd. Please use another non-shared folder for storing files (see https://github.com/tus/tusd/issues/201).
+Yes, you can absolutely do so without any modifications. However, there is one known problem: If you are using tusd inside VirtualBox (the default provider for Vagrant) and are storing the files inside a shared/synced folder, you might get TemporaryErrors (Lockfile created, but doesn't exist) when trying to upload. This happens because shared folders do not support hard links which are necessary for tusd. Please use another non-shared folder for storing files (see https://github.com/vimeo/tusd/issues/201).
 
 ### I am getting TemporaryErrors (Lockfile created, but doesn't exist)! What can I do?
 
-This error can occur when you are running tusd's disk storage on a file system which does not support hard links. These hard links are used to create lock files for ensuring that an upload's data is consistent. For example, this problem can happen when running tusd inside VirtualBox (see the answer above for more details) or when using file system interfaces to cloud storage providers (see https://github.com/tus/tusd/issues/257). We recommend you to ensure that your file system supports hard links, use a different file system, or use one of tusd's cloud storage abilities. If the problem still persists, please open a bug report.
+This error can occur when you are running tusd's disk storage on a file system which does not support hard links. These hard links are used to create lock files for ensuring that an upload's data is consistent. For example, this problem can happen when running tusd inside VirtualBox (see the answer above for more details) or when using file system interfaces to cloud storage providers (see https://github.com/vimeo/tusd/issues/257). We recommend you to ensure that your file system supports hard links, use a different file system, or use one of tusd's cloud storage abilities. If the problem still persists, please open a bug report.
 
 ### How can I prevent users from downloading the uploaded files?
 
@@ -34,4 +34,4 @@ tusd allows any user to retrieve a previously uploaded file by issuing a HTTP GE
 
 ### How can I keep the original filename for the uploads?
 
-tusd will generate a unique ID for every upload, e.g. `1881febb4343e9b806cad2e676989c0d`, which is also used as the filename for storing the upload. If you want to keep the original filename, e.g. `my_image.png`, you will have to rename the uploaded file manually after the upload is completed. One can use the [`post-finish` hook](https://github.com/tus/tusd/blob/master/docs/hooks.md#post-finish) to be notified once the upload is completed. The client must also be configured to add the filename to the upload's metadata, which can be [accessed inside the hooks](https://github.com/tus/tusd/blob/master/docs/hooks.md#the-hooks-environment) and used for the renaming operation.
+tusd will generate a unique ID for every upload, e.g. `1881febb4343e9b806cad2e676989c0d`, which is also used as the filename for storing the upload. If you want to keep the original filename, e.g. `my_image.png`, you will have to rename the uploaded file manually after the upload is completed. One can use the [`post-finish` hook](https://github.com/vimeo/tusd/blob/master/docs/hooks.md#post-finish) to be notified once the upload is completed. The client must also be configured to add the filename to the upload's metadata, which can be [accessed inside the hooks](https://github.com/vimeo/tusd/blob/master/docs/hooks.md#the-hooks-environment) and used for the renaming operation.

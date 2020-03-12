@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/tus/tusd/pkg/handler"
+	"github.com/vimeo/tusd/pkg/handler"
 )
 
 var stdout = log.New(os.Stdout, "[tusd] ", log.Ldate|log.Ltime)

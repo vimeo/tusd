@@ -21,7 +21,7 @@ message, so let's talk about the places that really matter:
 
 - %s - send your tus uploads to this endpoint
 - %s - gather statistics to keep tusd running smoothly
-- https://github.com/tus/tusd/issues - report your bugs here
+- https://github.com/vimeo/tusd/issues - report your bugs here
 
 So quit lollygagging, send over your files and experience the future!
 

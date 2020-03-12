@@ -1,4 +1,4 @@
-module github.com/tus/tusd
+module github.com/vimeo/tusd
 
 go 1.12
 

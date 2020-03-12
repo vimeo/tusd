@@ -13,7 +13,7 @@ If not otherwise noted, all hooks are invoked in a *non-blocking* way, meaning t
 
 ## Blocking Hooks
 
-On the other hand, there are a few *blocking* hooks, such as caused by the `pre-create` event. Because their exit code will dictate whether tusd will accept the current incoming request, tusd will wait until the hook process has exited. Therefore, in order to keep the response times low, one should avoid to make time-consuming operations inside the processes for blocking hooks. 
+On the other hand, there are a few *blocking* hooks, such as caused by the `pre-create` event. Because their exit code will dictate whether tusd will accept the current incoming request, tusd will wait until the hook process has exited. Therefore, in order to keep the response times low, one should avoid to make time-consuming operations inside the processes for blocking hooks.
 
 ### Blocking File Hooks
 
@@ -31,7 +31,7 @@ This event will be triggered before an upload is created, allowing you to run ce
 
 ### post-create
 
-This event will be triggered after an upload is created, allowing you to run certain routines. For example, notifying other parts of your system that a new upload has to be handled. At this point the upload may have received some data already since the invocation of these hooks may be delayed by a short duration. 
+This event will be triggered after an upload is created, allowing you to run certain routines. For example, notifying other parts of your system that a new upload has to be handled. At this point the upload may have received some data already since the invocation of these hooks may be delayed by a short duration.
 
 ### post-finish
 
@@ -135,7 +135,7 @@ $ tusd --hooks-http http://localhost:8081/write
 
 Note that the URL must include the `http://` prefix!
 
-In case of a blocking hook, HTTP Status Code 400 or greater tells tusd to reject the request (in the same way as non-zero exit code for File Hooks). See also [issue #170](https://github.com/tus/tusd/issues/170) regarding further improvements.
+In case of a blocking hook, HTTP Status Code 400 or greater tells tusd to reject the request (in the same way as non-zero exit code for File Hooks). See also [issue #170](https://github.com/vimeo/tusd/issues/170) regarding further improvements.
 
 
 ### Usage
